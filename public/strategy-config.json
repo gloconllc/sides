@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "minimumEdgePoints": 10,
+  "targetCount": 10,
+  "maximumScanAgeSeconds": 600,
+  "assessments": {},
+  "_instructions": "Assessments keyed by ticker. Required for qualification: probabilityLow, probabilityHigh (YES probability in percent), sourceUrl, reviewedAt, validUntil, modelValidated:true, rulesVerified:true, entryFeeCentsPerContract, exitFeeCentsPerContract, maxExecutableContracts. Optional swing: sourceUrl, catalyst, catalystAt, invalidation, targetCents, downsideCents, holdingDays. Evidence and execution assumptions must be verified externally; this app does not validate supplied claims."
+}
