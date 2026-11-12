@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head>
+<head> 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kalshi Edge Board</title>
@@ -184,6 +184,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font
   .eb-flash,.eb-status[data-live="true"] .eb-dot{animation:none}
 }
 </style>
+<link rel="stylesheet" href="/responsive-layout.css">
 </head>
 <body>
 <div class="eb-wrap">
@@ -677,10 +678,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font
   setInterval(function(){ if (!document.hidden) pullScan().catch(function(){}); }, 300000);
 })();
 </script>
-  <script src="/strategy-enhancement.js" defer></script>
-  <script src="/stake-cashout.js" defer></script>
-  <script src="/strategy-enhancement.js" defer></script>
+<script src="/strategy-enhancement.js" defer></script>
 <script src="/stake-cashout.js" defer></script>
 <script src="/workspace-layout.js" defer></script>
+<script src="/responsive-layout.js" defer></script>
 </body>
 </html>
