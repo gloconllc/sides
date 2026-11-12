@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kalshi Edge Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EAF0FA; --surface:#FFFFFF; --surface-2:#F4F7FD; --ink:#16193A; --muted:#545B7E; --line:#D3DBEC;
+  --accent:#5B3FD6; --accent-ink:#FFFFFF;
+  --gold:#C98A00; --gold-soft:#FFF1CC; --silver:#6F7B93; --silver-soft:#E7EBF3; --bronze:#A85A2E; --bronze-soft:#F8E4D8;
+  --gain:#0F7A51; --risk:#B92F26; --track:#DCE3F1;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121530; --surface:#1C2046; --surface-2:#232859; --ink:#EEF0FF; --muted:#A9B0D3; --line:#33397A;
+    --accent:#A08CFF; --accent-ink:#121530;
+    --gold:#F5BD2E; --gold-soft:#3D3313; --silver:#B8C2D9; --silver-soft:#2C3156; --bronze:#E39463; --bronze-soft:#3D2A22;
+    --gain:#43D69D; --risk:#FF7A70; --track:#2C3264;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121530; --surface:#1C2046; --surface-2:#232859; --ink:#EEF0FF; --muted:#A9B0D3; --line:#33397A;
+  --accent:#A08CFF; --accent-ink:#121530;
+  --gold:#F5BD2E; --gold-soft:#3D3313; --silver:#B8C2D9; --silver-soft:#2C3156; --bronze:#E39463; --bronze-soft:#3D2A22;
+  --gain:#43D69D; --risk:#FF7A70; --track:#2C3264;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:20px;line-height:1.5}
+.eb-wrap{max-width:1280px;margin:0 auto;padding:32px 24px 56px}
+.eb-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 32px;margin-bottom:28px}
+.eb-title{font-family:var(--display);font-weight:800;font-size:clamp(40px,6vw,72px);line-height:1;letter-spacing:-0.02em;margin:0}
+.eb-sub{margin:10px 0 0;color:var(--muted);font-size:20px;max-width:60ch}
+.eb-status{display:flex;align-items:center;gap:10px;font-size:18px;color:var(--muted);background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:8px 18px}
+.eb-dot{width:14px;height:14px;border-radius:50%;background:var(--silver)}
+.eb-status[data-live="true"] .eb-dot{background:var(--gain);box-shadow:0 0 0 0 var(--gain);animation:eb-pulse 2s infinite}
+.eb-status[data-age="aging"] .eb-dot{background:var(--gold)}
+.eb-status[data-age="stale"] .eb-dot{background:var(--risk)}
+.eb-hint{margin:-14px 0 24px;font-size:18px;color:var(--ink);background:var(--gold-soft);border-radius:16px;padding:12px 18px;display:inline-block}
+.eb-hint[hidden]{display:none}
+@keyframes eb-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gain) 60%,transparent)}70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+.eb-score{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:28px}
+.eb-score > div{background:var(--surface);border:2px solid var(--line);border-radius:22px;padding:18px 22px}
+.eb-score b{display:block;font-family:var(--display);font-weight:800;font-size:clamp(34px,4vw,52px);line-height:1.05;font-variant-numeric:tabular-nums}
+.eb-score span{color:var(--muted);font-size:18px}
+.eb-score .eb-medals b{color:var(--gold)}
+
+.eb-chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.eb-chip{font:inherit;font-size:19px;font-weight:700;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:10px 20px;cursor:pointer;min-height:48px}
+.eb-chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.eb-chip:focus-visible,.eb-row:focus-visible,.eb-star:focus-visible{outline:4px solid var(--accent);outline-offset:3px}
+
+.eb-tablebox{background:var(--surface);border:2px solid var(--line);border-radius:26px;overflow:hidden}
+.eb-table{width:100%;border-collapse:collapse}
+.eb-table thead th{text-align:left;font-size:17px;font-weight:700;color:var(--muted);padding:16px 18px;background:var(--surface-2);border-bottom:2px solid var(--line)}
+.eb-table th.eb-num,.eb-table td.eb-num{text-align:right}
+.eb-row{cursor:pointer;border-top:2px solid var(--line)}
+.eb-row:first-child{border-top:0}
+.eb-row:hover{background:var(--surface-2)}
+.eb-row td{padding:18px;vertical-align:middle}
+.eb-rank{font-family:var(--display);font-weight:800;font-size:30px;width:64px;color:var(--muted);font-variant-numeric:tabular-nums}
+.eb-medal{font-size:40px;line-height:1;width:58px}
+.eb-pick{font-family:var(--display);font-weight:600;font-size:24px;line-height:1.25}
+.eb-group{display:block;font-family:var(--body);font-weight:400;font-size:17px;color:var(--muted);margin-top:4px}
+.eb-move{display:inline-block;font-weight:700;font-size:20px;border-radius:14px;padding:8px 14px;white-space:nowrap}
+.eb-move[data-side="NO"]{background:color-mix(in srgb,var(--risk) 14%,transparent);color:var(--risk)}
+.eb-move[data-side="YES"]{background:color-mix(in srgb,var(--gain) 14%,transparent);color:var(--gain)}
+.eb-move[data-side="LOCK"]{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.eb-odds{font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.eb-odds small{display:block;font-size:16px;color:var(--muted)}
+.eb-meter{min-width:220px}
+.eb-pts{font-family:var(--display);font-weight:800;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
+.eb-pts small{font-family:var(--body);font-weight:400;font-size:16px;color:var(--muted);margin-left:4px}
+.eb-bar{position:relative;height:16px;border-radius:999px;background:var(--track);margin-top:10px}
+.eb-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;width:0;transition:width 900ms cubic-bezier(.2,.8,.2,1)}
+.eb-goal{position:absolute;top:-6px;bottom:-6px;left:50%;width:3px;background:var(--ink);border-radius:2px}
+.eb-row[data-tier="gold"] .eb-fill{background:var(--gold)}
+.eb-row[data-tier="silver"] .eb-fill{background:var(--silver)}
+.eb-row[data-tier="bronze"] .eb-fill{background:var(--bronze)}
+.eb-row[data-tier="gold"]{box-shadow:inset 8px 0 0 var(--gold)}
+.eb-row[data-tier="silver"]{box-shadow:inset 8px 0 0 var(--silver)}
+.eb-row[data-tier="bronze"]{box-shadow:inset 8px 0 0 var(--bronze)}
+.eb-star{font:inherit;font-size:30px;background:none;border:0;cursor:pointer;color:var(--muted);padding:6px;min-width:48px;min-height:48px}
+.eb-star[aria-pressed="true"]{color:var(--gold)}
+.eb-flash{animation:eb-flash 1.4s ease-out}
+@keyframes eb-flash{0%{background:color-mix(in srgb,var(--accent) 28%,transparent)}100%{background:transparent}}
+
+.eb-detail td{padding:0 18px 22px 18px;background:var(--surface-2)}
+.eb-detail[hidden]{display:none}
+.eb-detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding-top:6px}
+.eb-detail h3{font-family:var(--display);font-weight:600;font-size:20px;margin:12px 0 6px}
+.eb-detail p{margin:0;font-size:19px;max-width:60ch}
+.eb-ticker{font-size:16px;color:var(--muted);word-break:break-all}
+
+.eb-legend{display:flex;flex-wrap:wrap;gap:12px 28px;margin:22px 4px 0;font-size:18px;color:var(--muted)}
+.eb-legend b{color:var(--ink)}
+.eb-nav{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 26px}
+.eb-nav a{font-family:var(--display);font-weight:600;font-size:22px;color:var(--ink);text-decoration:none;background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:12px 22px}
+.eb-nav a:focus-visible{outline:4px solid var(--accent);outline-offset:3px}
+.sc{margin-top:64px}
+.sc h2{font-family:var(--display);font-weight:800;font-size:clamp(32px,4.4vw,52px);line-height:1.05;margin:0 0 8px}
+.sc-sub{color:var(--muted);margin:0 0 22px;max-width:70ch}
+.sc-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;background:var(--surface);border:2px solid var(--line);border-radius:26px;padding:20px}
+.sc-controls label{display:flex;flex-direction:column;gap:6px;font-size:17px;font-weight:700;color:var(--muted)}
+.sc-controls input,.sc-controls select{font:inherit;font-size:20px;color:var(--ink);background:var(--surface-2);border:2px solid var(--line);border-radius:14px;padding:10px 12px;min-height:52px}
+.sc-controls input:focus-visible,.sc-controls select:focus-visible,.sc-btn:focus-visible{outline:4px solid var(--accent);outline-offset:2px}
+.sc-wide{grid-column:span 2}
+.sc-check{flex-direction:row !important;align-items:center;gap:12px !important;color:var(--ink) !important;font-size:20px !important}
+.sc-check input{width:28px;height:28px;min-height:0}
+.sc-cats{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.sc-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:18px 4px}
+.sc-count{font-family:var(--display);font-weight:800;font-size:30px}
+.sc-count small{font-family:var(--body);font-weight:400;font-size:18px;color:var(--muted);margin-left:8px}
+.sc-btn{font:inherit;font-size:19px;font-weight:700;border-radius:999px;padding:12px 22px;min-height:52px;cursor:pointer;border:2px solid var(--accent);background:var(--accent);color:var(--accent-ink)}
+.sc-btn.sc-ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.sc-msg{font-size:18px;color:var(--gain);margin:0 4px 12px;min-height:1.5em}
+.sc-table td,.sc-table th{padding:14px 16px}
+.sc-table .sc-mkt{font-family:var(--display);font-weight:600;font-size:21px;line-height:1.25}
+.sc-table .sc-mkt span{display:block;font-family:var(--body);font-weight:400;font-size:17px;color:var(--muted)}
+.sc-row{border-top:2px solid var(--line)}
+.sc-row[data-tier="gold"]{box-shadow:inset 8px 0 0 var(--gold)}
+.sc-row[data-tier="silver"]{box-shadow:inset 8px 0 0 var(--silver)}
+.sc-row[data-tier="bronze"]{box-shadow:inset 8px 0 0 var(--bronze)}
+.sc-px{font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sc-px small{display:block;font-size:15px;color:var(--muted)}
+.sc-edge{font-family:var(--display);font-weight:800;font-size:24px;white-space:nowrap}
+.sc-none{color:var(--muted);font-size:17px}
+.sc-more{display:flex;justify-content:center;margin:20px 0}
+@media (max-width:860px){
+  .sc-controls{grid-template-columns:1fr 1fr}
+  .sc-wide{grid-column:1/-1}
+  .sc-table thead{display:none}
+  .sc-table,.sc-table tbody{display:block}
+  .sc-row{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;padding:14px}
+  .sc-row td{padding:0}
+  .sc-row td:first-child{grid-column:1/-1}
+}
+.eb-fab{position:fixed;right:18px;bottom:0;margin-bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;font-family:var(--display);font-weight:800;font-size:22px;padding:16px 24px;min-height:60px;border-radius:999px;border:0;background:var(--accent);color:var(--accent-ink);box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 40%,transparent);cursor:pointer}
+.eb-fab:focus-visible{outline:4px solid var(--ink);outline-offset:3px}
+.eb-wrap{padding-bottom:120px}
+.eb-stake{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:22px;background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:10px 16px;margin:0 0 18px}
+.eb-stake input{font:inherit;font-size:24px;width:7em;color:var(--ink);background:var(--surface-2);border:2px solid var(--line);border-radius:12px;padding:6px 10px}
+.eb-stake input:focus-visible{outline:4px solid var(--accent);outline-offset:2px}
+.eb-pay{display:block;margin-top:8px;font-size:17px;color:var(--muted);line-height:1.35}
+.eb-pay b{color:var(--ink);font-variant-numeric:tabular-nums}
+.eb-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.eb-foot{margin:26px 4px 0;font-size:17px;color:var(--muted);max-width:80ch}
+
+@media (max-width:860px){
+  body{font-size:19px}
+  .eb-wrap{padding:22px 14px 40px}
+  .eb-score{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .eb-table thead{display:none}
+  .eb-table,.eb-table tbody{display:block}
+  .eb-row{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:"rank medal pick star" "move move move move" "mkt mkt ours ours" "meter meter meter meter";gap:8px 12px;padding:16px}
+  .eb-row td{padding:0}
+  .eb-row .eb-rank{grid-area:rank;width:auto}
+  .eb-row .eb-medal{grid-area:medal;width:auto}
+  .eb-row .eb-pickcell{grid-area:pick}
+  .eb-row .eb-movecell{grid-area:move}
+  .eb-row .eb-mkt{grid-area:mkt;text-align:left}
+  .eb-row .eb-ours{grid-area:ours;text-align:left}
+  .eb-row .eb-meter{grid-area:meter;min-width:0}
+  .eb-row .eb-starcell{grid-area:star}
+  .eb-detail{display:block}
+  .eb-detail td{display:block;padding:0 16px 18px}
+  .eb-detail-grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion: reduce){
+  .eb-fill{transition:none}
+  .eb-flash,.eb-status[data-live="true"] .eb-dot{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="eb-wrap">
+  <header class="eb-head" id="eb-header">
+    <div>
+      <h1 class="eb-title">Kalshi Edge Board</h1>
+      <p class="eb-sub">Ten picks ranked by edge, the gap between our model’s odds and the market’s price. Medals and ranks recalculate every time prices update.</p>
+    </div>
+    <div class="eb-status" id="eb-status" data-live="false" role="status"><span class="eb-dot" aria-hidden="true"></span><span id="eb-status-text">Loading prices</span></div>
+    <button class="sc-btn" type="button" id="eb-refresh">⟳ Refresh prices</button>
+  </header>
+
+  <nav class="eb-nav" id="eb-nav" aria-label="Sections">
+    <a href="#top10">🏆 Top 10 picks</a>
+    <a href="#scanner">🔎 Full market scanner</a>
+  </nav>
+
+  <section class="eb-score" id="eb-scoreboard" aria-label="Scoreboard">
+    <div class="eb-medals"><b id="eb-gold">0</b><span>Gold medals</span></div>
+    <div><b id="eb-clear">0 of 10</b><span>Clear your 10-point bar</span></div>
+    <div><b id="eb-best">0</b><span id="eb-best-label">Best edge (points)</span></div>
+    <div><b id="eb-starred">0</b><span>Picks you starred</span></div>
+  </section>
+
+  <p class="eb-hint" id="eb-refresh-hint" hidden>Prices are over 15 minutes old. Tap Refresh to pull the latest from Kalshi.</p>
+
+  <div class="eb-chips" id="eb-filters" role="group" aria-label="Filter picks"></div>
+  <label class="eb-stake" id="eb-stake-box">Your stake per pick $<input id="eb-stake" type="number" min="1" step="100" value="5000" inputmode="numeric"></label>
+
+  <div class="eb-tablebox" id="top10">
+    <table class="eb-table">
+      <thead>
+        <tr>
+          <th scope="col">Rank</th>
+          <th scope="col"><span class="eb-sr">Medal</span></th>
+          <th scope="col">Pick</th>
+          <th scope="col">Your move</th>
+          <th scope="col" class="eb-num">Market odds</th>
+          <th scope="col" class="eb-num">Our odds</th>
+          <th scope="col">Edge (bar marks 10 points)</th>
+          <th scope="col">Star</th>
+        </tr>
+      </thead>
+      <tbody id="eb-body"></tbody>
+    </table>
+  </div>
+
+  <div class="eb-legend" id="eb-legend">
+    <span>🥇 <b>Gold</b> 10+ points of edge</span>
+    <span>🥈 <b>Silver</b> 5 to 10 points</span>
+    <span>🥉 <b>Bronze</b> under 5 points</span>
+    <span>Select any row to see why and what could go wrong.</span>
+  </div>
+
+  <p class="eb-foot" id="eb-footnote">Not financial advice. “Our odds” come from pricing models with stated assumptions, and Kalshi fees are not included. Bitcoin picks move together, as do the two S&amp;P 500 picks, so size each group as one position.</p>
+
+  <section class="sc" id="scanner" aria-labelledby="sc-title">
+    <h2 id="sc-title">Full market scanner</h2>
+    <p class="sc-sub" id="sc-sub">Every non-sports Kalshi market with real trading. Filter to find what you want, then save your filters for next time. Edge shows only where a pricing model exists.</p>
+
+    <div class="sc-controls" id="sc-controls">
+      <label class="sc-wide">Search markets<input id="sc-q" type="search" placeholder="Try Bitcoin, Fed, Oscar, CPI" autocomplete="off"></label>
+      <label>Sort by<select id="sc-sort">
+        <option value="edge">Biggest edge</option>
+        <option value="v">Most traded today</option>
+        <option value="oi">Most open interest</option>
+        <option value="d">Closing soonest</option>
+      </select></label>
+      <label>Side<select id="sc-side">
+        <option value="best">Best side</option>
+        <option value="YES">Yes only</option>
+        <option value="NO">No only</option>
+      </select></label>
+      <label>Minimum open interest<select id="sc-oi">
+        <option value="500">500 contracts</option>
+        <option value="5000">5,000 contracts</option>
+        <option value="25000">25,000 contracts</option>
+        <option value="100000">100,000 contracts</option>
+      </select></label>
+      <label>Closes within<select id="sc-days">
+        <option value="0">Any time</option>
+        <option value="30">30 days</option>
+        <option value="90">90 days</option>
+        <option value="365">One year</option>
+      </select></label>
+      <label>Minimum edge (points)<input id="sc-edge" type="number" min="0" max="50" step="1" value="0"></label>
+      <label class="sc-check"><input id="sc-modeled" type="checkbox"> Only markets with a model</label>
+      <div class="sc-cats" id="sc-cats" role="group" aria-label="Categories"></div>
+    </div>
+
+    <div class="sc-bar">
+      <div class="sc-count" id="sc-count">Loading markets</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="sc-btn sc-ghost" type="button" id="sc-refresh">⟳ Refresh scan</button>
+        <button class="sc-btn sc-ghost" type="button" id="sc-reset">Clear filters</button>
+        <button class="sc-btn" type="button" id="sc-save">Save my filters</button>
+      </div>
+    </div>
+    <p class="sc-msg" id="sc-msg" role="status"></p>
+
+    <div class="eb-tablebox">
+      <table class="eb-table sc-table">
+        <thead><tr>
+          <th scope="col">Market</th>
+          <th scope="col">Category</th>
+          <th scope="col" class="eb-num">Yes</th>
+          <th scope="col" class="eb-num">No</th>
+          <th scope="col" class="eb-num">Our odds</th>
+          <th scope="col">Edge</th>
+          <th scope="col" class="eb-num">Open interest</th>
+          <th scope="col">Closes</th>
+        </tr></thead>
+        <tbody id="sc-body"></tbody>
+      </table>
+    </div>
+    <div class="sc-more"><button class="sc-btn sc-ghost" type="button" id="sc-more" hidden>Show 50 more</button></div>
+  </section>
+</div>
+<button class="eb-fab" type="button" id="eb-fab" aria-label="Refresh prices and scan">⟳ Refresh</button>
+
+<script>
+(function(){
+  "use strict";
+
+  // Fallback snapshot pulled from Kalshi's public API on Nov 11, 2026, 9:17 PM PST.
+  // Live prices replace these whenever the board's stored prices are available.
+  var SNAPSHOT = {"asOf":"2026-11-12T05:17:09+00:00","markets":{
+    "KXBTCPRICE-130000-27JUL08":{"yes_bid":21,"yes_ask":22,"no_bid":78,"no_ask":79},
+    "KXBTCPRICE-130000-27JUN10":{"yes_bid":15,"yes_ask":16,"no_bid":84,"no_ask":85},
+    "KXBTCPRICE-130000-27MAY13":{"yes_bid":11,"yes_ask":13,"no_bid":87,"no_ask":89},
+    "KXBTCPRICE-130000-27APR15":{"yes_bid":11,"yes_ask":12,"no_bid":88,"no_ask":89},
+    "KXSP500WHEN-8000-26DEC01":{"yes_bid":1,"yes_ask":5,"no_bid":95,"no_ask":99},
+    "KXSP500WHEN-8000-27JAN01":{"yes_bid":32,"yes_ask":33,"no_bid":67,"no_ask":68},
+    "KXCPIYOY-26DEC-T3.7":{"yes_bid":36,"yes_ask":38,"no_bid":62,"no_ask":64},
+    "KXCPICOREYOY-26DEC-T2.8":{"yes_bid":57,"yes_ask":58,"no_bid":42,"no_ask":43},
+    "KXCOMPANYACTIONMERGER-27-27APR01":{"yes_bid":63,"yes_ask":65,"no_bid":35,"no_ask":37},
+    "KXCOMPANYACTIONMERGER-27-27MAY01":{"yes_bid":57,"yes_ask":62,"no_bid":38,"no_ask":43},
+    "KXAGICO-COMP-29":{"yes_bid":79,"yes_ask":80,"no_bid":20,"no_ask":21},
+    "KXAGICO-COMP-30":{"yes_bid":77,"yes_ask":78,"no_bid":22,"no_ask":23}
+  }};
+
+  // Our odds are the probability of the side you buy, in percent.
+  var PICKS = [
+    {id:"btc-jul", title:"Bitcoin hits $130k by Jul 8, 2027", group:"Bitcoin", tag:"btc", side:"NO",
+      ticker:"KXBTCPRICE-130000-27JUL08", lo:88, hi:94,
+      why:"Bitcoin sits near $73,600 and needs about a 77% rally. A barrier model at 40% to 50% volatility puts the chance of touching $130k at 6% to 12%.",
+      risk:"Bitcoin has fat tails. One sharp rally, or a policy surprise, breaks the model."},
+    {id:"btc-jun", title:"Bitcoin hits $130k by Jun 10, 2027", group:"Bitcoin", tag:"btc", side:"NO",
+      ticker:"KXBTCPRICE-130000-27JUN10", lo:90, hi:95.5,
+      why:"Same rally needed with four fewer weeks to get there. Model odds of touching $130k: 4.5% to 10%.",
+      risk:"Moves with every other Bitcoin pick, so it adds no diversification."},
+    {id:"btc-may", title:"Bitcoin hits $130k by May 13, 2027", group:"Bitcoin", tag:"btc", side:"NO",
+      ticker:"KXBTCPRICE-130000-27MAY13", lo:92, hi:97,
+      why:"Model odds of touching $130k by mid May: 3% to 8%.",
+      risk:"Wider spread on this date, so the entry price matters more."},
+    {id:"btc-apr", title:"Bitcoin hits $130k by Apr 15, 2027", group:"Bitcoin", tag:"btc", side:"NO",
+      ticker:"KXBTCPRICE-130000-27APR15", lo:94, hi:98,
+      why:"Shortest window of the four. Model odds of touching $130k: 2% to 6%.",
+      risk:"Small payout per contract, so fees take a larger share."},
+    {id:"spx-dec", title:"S&P 500 tops 8,000 before Dec 1, 2026", group:"S&P 500", tag:"spx", side:"YES",
+      ticker:"KXSP500WHEN-8000-26DEC01", lo:9, hi:24,
+      why:"The index is about 5% below 8,000 and only needs to touch it once. At 12% to 20% volatility, the model gives 9% to 24%.",
+      risk:"Lottery-style payoff with little depth at the ask. Recent tech selling could keep the index pinned."},
+    {id:"spx-jan", title:"S&P 500 tops 8,000 before Jan 1, 2027", group:"S&P 500", tag:"spx", side:"YES",
+      ticker:"KXSP500WHEN-8000-27JAN01", lo:32, hi:48,
+      why:"Seven weeks to gain about 5% at any point. Model range: 32% to 48%.",
+      risk:"Wide bid and ask spread. Use a limit order."},
+    {id:"cpi", title:"December CPI above 3.7% year over year", group:"Inflation", tag:"cpi", side:"YES",
+      ticker:"KXCPIYOY-26DEC-T3.7", lo:50, hi:60,
+      why:"October’s CPI index is already 4.15% above December 2025’s. Prices must fall more than 0.39% from October to December to miss, which happened in six of the last 19 years.",
+      risk:"Gasoline is falling fast. A continued oil slide pushes this toward no."},
+    {id:"core", title:"December core CPI above 2.8% year over year", group:"Inflation", tag:"cpi", side:"YES",
+      ticker:"KXCPICOREYOY-26DEC-T2.8", lo:60, hi:70,
+      why:"Core is already running 2.85% against the December 2025 base and needs a flat or rising October to December move, which happened in each of the last four years.",
+      risk:"Older years often showed small declines, which would land this at 2.8% and pay no."},
+    {id:"tsla", title:"Tesla and SpaceX merger date mismatch", group:"Lock-in", tag:"lock", side:"LOCK",
+      legs:[{ticker:"KXCOMPANYACTIONMERGER-27-27MAY01", side:"YES", label:"YES before May 1"},{ticker:"KXCOMPANYACTIONMERGER-27-27APR01", side:"NO", label:"NO before Apr 1"}],
+      why:"The April contract trades above the May contract, which cannot be right. Buying both guarantees $1, and pays $2 if a deal lands in April.",
+      risk:"Profit is a cent or two and thin depth at the ask. Fees can erase it."},
+    {id:"agi", title:"AGI date mismatch, 2030 versus 2031", group:"Lock-in", tag:"lock", side:"LOCK",
+      legs:[{ticker:"KXAGICO-COMP-30", side:"YES", label:"YES before 2031"},{ticker:"KXAGICO-COMP-29", side:"NO", label:"NO before 2030"}],
+      why:"The 2030 contract trades above the 2031 contract. Buying both guarantees $1 at settlement.",
+      risk:"Money is tied up until 2031 for about a cent of profit."}
+  ];
+
+  var FILTERS = [
+    {key:"all", label:"All picks"},
+    {key:"gold", label:"🥇 Gold only"},
+    {key:"btc", label:"Bitcoin"},
+    {key:"spx", label:"S&P 500"},
+    {key:"cpi", label:"Inflation"},
+    {key:"lock", label:"Lock-ins"},
+    {key:"star", label:"★ Starred"}
+  ];
+
+  var state = {prices: SNAPSHOT, live:false, filter:"all", open:{}, stars:{}, last:{}};
+
+  try { var s = localStorage.getItem("eb-stars"); if (s) state.stars = JSON.parse(s) || {}; } catch (e) { state.stars = {}; }
+  function saveStars(){ try { localStorage.setItem("eb-stars", JSON.stringify(state.stars)); } catch (e) {} }
+
+  function el(tag, cls, text){ var n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n; }
+  function mk(t){ var m = state.prices && state.prices.markets ? state.prices.markets[t] : null; return m || null; }
+  function cents(v){ return (Math.round(v*10)/10).toString().replace(/\.0$/,"") + "¢"; }
+  function pct(v){ return (Math.round(v*10)/10).toString().replace(/\.0$/,"") + "%"; }
+
+  function score(p){
+    if (p.side === "LOCK"){
+      var cost = 0, ok = true;
+      p.legs.forEach(function(l){ var m = mk(l.ticker); if(!m){ok=false;return;} cost += (l.side==="YES"? m.yes_ask : m.no_ask); });
+      if (!ok) return null;
+      return {price:cost, mid:100, edge:100-cost, lock:true};
+    }
+    var m = mk(p.ticker); if(!m) return null;
+    var price = p.side==="YES" ? m.yes_ask : m.no_ask;
+    var mid = (p.lo+p.hi)/2;
+    return {price:price, mid:mid, edge:mid-price, lock:false};
+  }
+  function tier(edge){ return edge>=10 ? "gold" : edge>=5 ? "silver" : "bronze"; }
+  var MEDAL = {gold:"🥇", silver:"🥈", bronze:"🥉"};
+
+  function buildFilters(){
+    var box = document.getElementById("eb-filters");
+    FILTERS.forEach(function(f){
+      var b = el("button","eb-chip",f.label);
+      b.type="button"; b.setAttribute("aria-pressed", f.key===state.filter ? "true":"false"); b.dataset.key=f.key;
+      b.addEventListener("click", function(){ state.filter=f.key; Array.prototype.forEach.call(box.children,function(c){c.setAttribute("aria-pressed", c.dataset.key===f.key?"true":"false");}); render(false); });
+      box.appendChild(b);
+    });
+  }
+
+  function render(animate){
+    var rows = PICKS.map(function(p){ return {p:p, s:score(p)}; }).filter(function(r){ return r.s; });
+    rows.sort(function(a,b){ return b.s.edge - a.s.edge; });
+    rows.forEach(function(r,i){ r.rank=i+1; r.t=tier(r.s.edge); });
+
+    var gold = rows.filter(function(r){return r.t==="gold";}).length;
+    var clear = rows.filter(function(r){return r.s.edge>=10;}).length;
+    document.getElementById("eb-gold").textContent = gold;
+    document.getElementById("eb-clear").textContent = clear + " of " + rows.length;
+    if (rows.length){ document.getElementById("eb-best").textContent = "+" + (Math.round(rows[0].s.edge*10)/10); document.getElementById("eb-best-label").textContent = "Best edge, " + rows[0].p.group; }
+    document.getElementById("eb-starred").textContent = Object.keys(state.stars).filter(function(k){return state.stars[k];}).length;
+
+    var shown = rows.filter(function(r){
+      var f = state.filter;
+      if (f==="all") return true;
+      if (f==="gold") return r.t==="gold";
+      if (f==="star") return !!state.stars[r.p.id];
+      return r.p.tag===f;
+    });
+
+    var body = document.getElementById("eb-body");
+    body.textContent = "";
+    if (!shown.length){
+      var tr0 = el("tr"); var td0 = el("td", null, state.filter==="star" ? "Star a pick to track it here." : "No picks match this filter right now.");
+      td0.colSpan=8; td0.style.padding="28px"; td0.style.fontSize="20px"; tr0.appendChild(td0); body.appendChild(tr0); return;
+    }
+
+    shown.forEach(function(r){
+      var p=r.p, s=r.s;
+      var tr = el("tr","eb-row"); tr.id = "eb-pick-"+p.id; tr.dataset.tier=r.t; tr.tabIndex=0;
+      tr.setAttribute("aria-expanded", state.open[p.id] ? "true":"false");
+
+      tr.appendChild(el("td","eb-rank","#"+r.rank));
+      var md = el("td","eb-medal",MEDAL[r.t]); md.setAttribute("aria-label", r.t+" medal"); tr.appendChild(md);
+
+      var pc = el("td","eb-pickcell"); var pt = el("div","eb-pick",p.title); pt.appendChild(el("span","eb-group",p.group)); pc.appendChild(pt); tr.appendChild(pc);
+
+      var mc = el("td","eb-movecell");
+      var moveText = p.side==="LOCK" ? "Buy both sides" : "Buy " + p.side + " at " + cents(s.price);
+      var mv = el("span","eb-move",moveText); mv.dataset.side=p.side; mc.appendChild(mv);
+      var stake = Math.max(1, +document.getElementById("eb-stake").value || 5000);
+      var contracts = stake / (s.price/100);
+      var usd = function(v){ return "$" + Math.round(v).toLocaleString(); };
+      var pay = el("span","eb-pay");
+      pay.appendChild(document.createTextNode("Pays if it hits: ")); pay.appendChild(el("b",null,usd(contracts)));
+      pay.appendChild(el("br"));
+      if (s.lock){ pay.appendChild(document.createTextNode("Locked profit: ")); pay.appendChild(el("b",null,usd(contracts - stake))); }
+      else { pay.appendChild(document.createTextNode("Cash out if price reaches our odds: ")); pay.appendChild(el("b",null,usd(contracts * s.mid/100))); }
+      mc.appendChild(pay); tr.appendChild(mc);
+
+      var mk1 = el("td","eb-num eb-odds eb-mkt");
+      if (s.lock){ mk1.textContent = cents(s.price); mk1.appendChild(el("small",null,"total cost")); }
+      else { mk1.textContent = pct(s.price); mk1.appendChild(el("small",null,"market price")); }
+      tr.appendChild(mk1);
+
+      var ou = el("td","eb-num eb-odds eb-ours");
+      if (s.lock){ ou.textContent = "$1"; ou.appendChild(el("small",null,"guaranteed payout")); }
+      else { ou.textContent = pct(s.mid); ou.appendChild(el("small",null,p.lo+"% to "+p.hi+"%")); }
+      tr.appendChild(ou);
+
+      var mt = el("td","eb-meter");
+      var pts = el("div","eb-pts", (s.edge>=0?"+":"") + (Math.round(s.edge*10)/10)); pts.appendChild(el("small",null,"points"));
+      var bar = el("div","eb-bar"); var fill = el("div","eb-fill"); var goal = el("div","eb-goal"); goal.title="Your 10-point bar";
+      bar.appendChild(fill); bar.appendChild(goal); mt.appendChild(pts); mt.appendChild(bar); tr.appendChild(mt);
+      var w = Math.max(0, Math.min(100, s.edge/20*100));
+      if (animate){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ fill.style.width = w+"%"; }); }); } else { fill.style.width = w+"%"; }
+
+      var sc = el("td","eb-starcell");
+      var star = el("button","eb-star", state.stars[p.id] ? "★" : "☆"); star.type="button";
+      star.setAttribute("aria-pressed", state.stars[p.id] ? "true":"false"); star.setAttribute("aria-label","Star "+p.title);
+      star.addEventListener("click", function(ev){ ev.stopPropagation(); state.stars[p.id] = !state.stars[p.id]; saveStars(); render(false); });
+      sc.appendChild(star); tr.appendChild(sc);
+
+      var prevEdge = state.last[p.id];
+      if (prevEdge!=null && Math.abs(prevEdge - s.edge) > 0.05) tr.classList.add("eb-flash");
+      state.last[p.id] = s.edge;
+
+      function toggle(){ state.open[p.id] = !state.open[p.id]; render(false); var again=document.getElementById("eb-pick-"+p.id); if(again) again.focus(); }
+      tr.addEventListener("click", toggle);
+      tr.addEventListener("keydown", function(ev){ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); toggle(); } });
+      body.appendChild(tr);
+
+      var dt = el("tr","eb-detail"); dt.hidden = !state.open[p.id];
+      var dtd = el("td"); dtd.colSpan=8; var grid = el("div","eb-detail-grid");
+      var c1 = el("div"); c1.appendChild(el("h3",null,"Why it ranks here")); c1.appendChild(el("p",null,p.why));
+      var c2 = el("div"); c2.appendChild(el("h3",null,"What could go wrong")); c2.appendChild(el("p",null,p.risk));
+      var c3 = el("div"); c3.appendChild(el("h3",null,"Markets on Kalshi"));
+      if (p.legs){ p.legs.forEach(function(l){ var m=mk(l.ticker); c3.appendChild(el("p",null,l.label+" at "+cents(l.side==="YES"?m.yes_ask:m.no_ask))); c3.appendChild(el("p","eb-ticker",l.ticker)); }); }
+      else { var m=mk(p.ticker); c3.appendChild(el("p",null,"Yes "+cents(m.yes_bid)+" bid, "+cents(m.yes_ask)+" ask. No "+cents(m.no_bid)+" bid, "+cents(m.no_ask)+" ask.")); c3.appendChild(el("p","eb-ticker",p.ticker)); }
+      grid.appendChild(c1); grid.appendChild(c2); grid.appendChild(c3); dtd.appendChild(grid); dt.appendChild(dtd); body.appendChild(dt);
+    });
+  }
+
+  function setStatus(){
+    var box = document.getElementById("eb-status");
+    var when = "";
+    try { when = new Date(state.prices.asOf).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"}); } catch(e){ when = state.prices.asOf || ""; }
+    var mins = Math.max(0, Math.round((Date.now() - new Date(state.prices.asOf).getTime())/60000));
+    var age = isNaN(mins) ? "" : (mins < 1 ? ", updated just now" : mins < 60 ? ", updated " + mins + " min ago" : ", updated " + Math.round(mins/60) + " hr ago");
+    box.dataset.live = state.live && mins < 60 ? "true" : "false";
+    box.dataset.age = mins < 15 ? "fresh" : mins < 60 ? "aging" : "stale";
+    document.getElementById("eb-status-text").textContent = (state.live ? "Live board, prices as of " : "Saved snapshot, prices as of ") + when + age;
+    var hint = document.getElementById("eb-refresh-hint");
+    if (hint) hint.hidden = mins < 15;
+  }
+  setInterval(setStatus, 30000);
+  document.getElementById("eb-fab").addEventListener("click", function(){
+    var fab = this; fab.textContent = "Refreshing…";
+    ["eb-refresh","sc-refresh"].forEach(function(id){ var b = document.getElementById(id); if (b && !b.disabled) b.click(); });
+    setTimeout(function(){ fab.textContent = "✓ Up to date"; }, 1200);
+    setTimeout(function(){ fab.textContent = "⟳ Refresh"; }, 3200);
+  });
+
+  buildFilters();
+  setStatus();
+  render(true);
+  document.getElementById("eb-stake").addEventListener("input", function(){ render(false); });
+
+  // Live prices from the Vercel relay: on load, on Refresh, and every 60 seconds.
+  var TICKERS = [];
+  PICKS.forEach(function(p){ if (p.ticker) TICKERS.push(p.ticker); (p.legs||[]).forEach(function(l){ TICKERS.push(l.ticker); }); });
+  async function pullPrices(){
+    var r = await fetch("/api/prices?tickers=" + encodeURIComponent(TICKERS.join(",")), {cache:"no-store"});
+    if (!r.ok) throw new Error("relay " + r.status);
+    var d = await r.json();
+    if (!d || !d.markets || !Object.keys(d.markets).length) throw new Error("empty");
+    state.prices = d; state.live = true; setStatus(); render(false);
+  }
+  var rb = document.getElementById("eb-refresh");
+  rb.addEventListener("click", async function(){
+    rb.disabled = true; rb.textContent = "Refreshing…";
+    try { await pullPrices(); render(true); rb.textContent = "✓ Showing latest prices"; }
+    catch(e){ rb.textContent = "Could not refresh, try again"; }
+    setTimeout(function(){ rb.disabled = false; rb.textContent = "⟳ Refresh prices"; }, 2500);
+  });
+  pullPrices().catch(function(){ /* keep the saved snapshot */ });
+  setInterval(function(){ if (!document.hidden) pullPrices().catch(function(){}); }, 60000);
+})();
+
+(function(){
+  "use strict";
+  var S = {rows:[], meta:null, cats:{}, shown:50, db:null, uid:null};
+  var $ = function(id){ return document.getElementById(id); };
+  function el(tag, cls, text){ var n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n; }
+  function c(v){ return v==null ? "–" : (Math.round(v*10)/10).toString().replace(/\.0$/,"") + "¢"; }
+  var MEDAL = {gold:"🥇", silver:"🥈", bronze:"🥉"};
+
+  function edgeOf(r, side){
+    if (r.mp == null) return null;
+    var yes = r.mp - r.ya, no = (100 - r.mp) - r.na;
+    if (side === "YES") return {side:"YES", edge:yes};
+    if (side === "NO") return {side:"NO", edge:no};
+    return yes >= no ? {side:"YES", edge:yes} : {side:"NO", edge:no};
+  }
+
+  function filters(){
+    var cats = Object.keys(S.cats).filter(function(k){ return S.cats[k]; });
+    return { q:$("sc-q").value.trim(), sort:$("sc-sort").value, side:$("sc-side").value,
+      oi:+$("sc-oi").value, days:+$("sc-days").value, minEdge:+$("sc-edge").value || 0,
+      modeled:$("sc-modeled").checked, cats:cats };
+  }
+  function applyFilters(f){
+    if (!f) return;
+    if (f.q!=null) $("sc-q").value=f.q;
+    ["sort","side"].forEach(function(k){ if(f[k]!=null) $("sc-"+k).value=f[k]; });
+    if (f.oi!=null) $("sc-oi").value=String(f.oi);
+    if (f.days!=null) $("sc-days").value=String(f.days);
+    if (f.minEdge!=null) $("sc-edge").value=f.minEdge;
+    if (f.modeled!=null) $("sc-modeled").checked=!!f.modeled;
+    S.cats={}; (f.cats||[]).forEach(function(k){ S.cats[k]=true; });
+    buildCats();
+  }
+
+  function buildCats(){
+    var box=$("sc-cats"); box.textContent="";
+    var counts={}; S.rows.forEach(function(r){ counts[r.c]=(counts[r.c]||0)+1; });
+    Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];}).forEach(function(k){
+      var b=el("button","eb-chip",k+" ("+counts[k].toLocaleString()+")"); b.type="button";
+      b.setAttribute("aria-pressed", S.cats[k] ? "true":"false");
+      b.addEventListener("click", function(){ S.cats[k]=!S.cats[k]; b.setAttribute("aria-pressed", S.cats[k]?"true":"false"); S.shown=50; render(); });
+      box.appendChild(b);
+    });
+  }
+
+  function render(){
+    var f=filters(), q=f.q.toLowerCase(), now=Date.now();
+    var list=S.rows.filter(function(r){
+      if (f.cats.length && f.cats.indexOf(r.c)<0) return false;
+      if (r.oi < f.oi) return false;
+      if (f.days && (new Date(r.d).getTime()-now) > f.days*86400000) return false;
+      if (q && (r.e+" "+r.s+" "+r.t).toLowerCase().indexOf(q)<0) return false;
+      var ed=edgeOf(r,f.side);
+      if (f.modeled && !ed) return false;
+      if (f.minEdge>0 && (!ed || ed.edge < f.minEdge)) return false;
+      r._ed=ed; return true;
+    });
+    list.sort(function(a,b){
+      if (f.sort==="v") return b.v-a.v;
+      if (f.sort==="oi") return b.oi-a.oi;
+      if (f.sort==="d") return a.d<b.d?-1:a.d>b.d?1:0;
+      var ea=a._ed?a._ed.edge:-999, eb=b._ed?b._ed.edge:-999;
+      return eb!==ea ? eb-ea : b.v-a.v;
+    });
+    var modeled=list.filter(function(r){return r._ed;}).length;
+    var cnt=$("sc-count"); cnt.textContent=list.length.toLocaleString()+" markets match";
+    cnt.appendChild(el("small",null,modeled+" with a model"));
+
+    var body=$("sc-body"); body.textContent="";
+    if (!list.length){ var tr0=el("tr"); var td0=el("td",null,"No markets match. Loosen a filter or clear them."); td0.colSpan=8; td0.style.padding="28px"; tr0.appendChild(td0); body.appendChild(tr0); }
+    list.slice(0,S.shown).forEach(function(r){
+      var tr=el("tr","sc-row");
+      var ed=r._ed, tier=ed ? (ed.edge>=10?"gold":ed.edge>=5?"silver":"bronze") : null;
+      if (tier) tr.dataset.tier=tier;
+      var m=el("td","sc-mkt",r.e); m.appendChild(el("span",null,r.s)); tr.appendChild(m);
+      tr.appendChild(el("td","sc-none",r.c));
+      var y=el("td","eb-num sc-px",c(r.ya)); y.appendChild(el("small",null,"bid "+c(r.yb))); tr.appendChild(y);
+      var n=el("td","eb-num sc-px",c(r.na)); n.appendChild(el("small",null,"bid "+c(r.nb))); tr.appendChild(n);
+      var o=el("td","eb-num sc-px", r.mp!=null ? (r.mp+"%") : "–"); o.appendChild(el("small",null, r.mn || "No model yet")); tr.appendChild(o);
+      var e=el("td");
+      if (ed){ var s=el("div","sc-edge",MEDAL[tier]+" "+(ed.edge>=0?"+":"")+(Math.round(ed.edge*10)/10)); e.appendChild(s); e.appendChild(el("small","sc-none","Buy "+ed.side)); }
+      else e.appendChild(el("span","sc-none","Not modeled"));
+      tr.appendChild(e);
+      tr.appendChild(el("td","eb-num sc-px",r.oi.toLocaleString()));
+      tr.appendChild(el("td","sc-px",new Date(r.d+"T12:00:00Z").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})));
+      body.appendChild(tr);
+    });
+    $("sc-more").hidden = list.length <= S.shown;
+  }
+
+  ["sc-q","sc-sort","sc-side","sc-oi","sc-days","sc-edge","sc-modeled"].forEach(function(id){
+    $(id).addEventListener(id==="sc-q"||id==="sc-edge" ? "input" : "change", function(){ S.shown=50; render(); });
+  });
+  $("sc-more").addEventListener("click", function(){ S.shown+=50; render(); });
+  $("sc-reset").addEventListener("click", function(){ applyFilters({q:"",sort:"edge",side:"best",oi:500,days:0,minEdge:0,modeled:false,cats:[]}); S.shown=50; render(); $("sc-msg").textContent=""; });
+  $("sc-save").addEventListener("click", function(){
+    var msg=$("sc-msg");
+    try { var f=filters(); f.savedAt=new Date().toISOString(); localStorage.setItem("sc-filters", JSON.stringify(f)); msg.textContent="Saved. These filters load automatically next time on this device."; }
+    catch(e){ msg.textContent="Could not save on this device. Your filters still work on this screen."; }
+  });
+
+  async function pullScan(){
+    var r = await fetch("/api/scan", {cache:"no-store"});
+    if (!r.ok) throw new Error("relay " + r.status);
+    var meta = await r.json();
+    S.rows = meta.rows || []; S.meta = meta;
+    var when=new Date(meta.asOf).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});
+    $("sc-sub").textContent="Every non-sports Kalshi market with real trading: "+meta.total.toLocaleString()+" markets, pulled "+when+(meta.partial?" (partial pull, try Refresh again)":"")+". Edge shows only where a pricing model exists ("+meta.modeled+" markets right now).";
+    buildCats(); render();
+  }
+
+  try { var saved = localStorage.getItem("sc-filters"); if (saved) applyFilters(JSON.parse(saved)); } catch(e){}
+  var sr = $("sc-refresh");
+  sr.addEventListener("click", async function(){
+    sr.disabled = true; sr.textContent = "Refreshing…";
+    try { await pullScan(); sr.textContent = "✓ Showing latest scan"; }
+    catch(e){ sr.textContent = "Could not refresh, try again"; }
+    setTimeout(function(){ sr.disabled = false; sr.textContent = "⟳ Refresh scan"; }, 2500);
+  });
+  $("sc-count").textContent = "Loading markets, this can take up to a minute";
+  pullScan().catch(function(){ $("sc-count").textContent="Could not load the scan. Tap Refresh scan to try again."; });
+  setInterval(function(){ if (!document.hidden) pullScan().catch(function(){}); }, 300000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "name": "kalshi-edge-board",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gamified Kalshi edge board with a live price relay",
+  "engines": { "node": ">=18" }
+}
